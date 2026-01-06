@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Task from './Task';
 
 const Home = () => {
@@ -6,21 +6,85 @@ const Home = () => {
 	const [ inputValue, setInputValue ] = useState('');
 	function onClick (e){
 		e.preventDefault();
-		let newList = [...list];
+		let newList = list? [...list] : [];
 		let position = newList.length;
 		let inputValueClean = inputValue.trim().replace(/\s+/g, " ");
 		if (inputValueClean != '') {
-			newList[position] = {id: position+1, task: inputValueClean}
-			setList(newList);
+			let newTask = {
+				"label": inputValueClean,
+				"is_done": false
+				};
+			
+			
 			setInputValue('');
+			fetch('https://playground.4geeks.com/todo/todos/Drokko', {
+				method: "POST",
+				body: JSON.stringify(newTask),
+				headers: {
+					"Content-Type": "application/json"
+				}
+				})
+				.then(resp => {
+					console.log(resp.ok); // Será true si la respuesta es exitosa
+					console.log(resp.status);
+					console.log(resp);
+					 // El código de estado 201, 300, 400, etc.
+					return resp.json(); // Intentará parsear el resultado a JSON y retornará una promesa donde puedes usar .then para seguir con la lógica
+				})
+				.then(data => {
+					console.log(data); 
+					newList[position] = {label: data.label, is_done:data.is_done, id:data.id}
+					setList(newList);
+					console.log(newList);
+					
+				})
+				.catch(error => {
+					// Manejo de errores
+					console.log(error);
+				});
 	}}
 	function deleteItem (id) {
 		let newList = [...list]; 
 		newList = newList.filter((task)=> task.id !== id); 
 		setList(newList);
-		
+		fetch(`https://playground.4geeks.com/todo/todos/${id}`, {
+				method: "DELETE"})
+				.then(resp => {
+					console.log(resp.ok); // Será true si la respuesta es exitosa
+					console.log(resp.status); // El código de estado 201, 300, 400, etc.
+					return resp; // Intentará parsear el resultado a JSON y retornará una promesa donde puedes usar .then para seguir con la lógica
+				})
+				.then(data => {
+					console.log(data); 
+					
+				})
+				.catch(error => {
+					// Manejo de errores
+					console.log(error);
+				});
 	}
-	const ToDoList = list.map((item)=> <Task title={item.task} onClick ={deleteItem} key={item.id} id={item.id}/>)
+
+	useEffect(()=> {
+		fetch('https://playground.4geeks.com/todo/users/Drokko')
+			.then(resp => {
+				console.log(resp.ok); // Será true si la respuesta es exitosa
+				console.log(resp.status); // El código de estado 201, 300, 400, etc.
+				return resp.json(); // Intentará parsear el resultado a JSON y retornará una promesa donde puedes usar .then para seguir con la lógica
+			})
+			.then(data => {
+				console.log(data); 
+				setList(data.todos);
+			})
+			.catch(error => {
+				console.log(error);
+			})
+
+	},[]);
+
+	const ToDoList = list.map((item)=> <Task title={item.label} onClick ={deleteItem} key={item.id} id={item.id}/>)
+	
+
+	
 
 	return (
 		<div className="container-list">
