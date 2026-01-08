@@ -4,6 +4,28 @@ import Task from './Task';
 const Home = () => {
 	const [list, setList] = useState([{id: 1, task: 'Wash my hands'},{id: 2, task: 'Wash my card'}]);
 	const [ inputValue, setInputValue ] = useState('');
+	function deleteAll() {
+		let newList = [...list]; 
+		newList.forEach((task)=> 
+		fetch(`https://playground.4geeks.com/todo/todos/${task.id}`, {
+				method: "DELETE"})
+				.then(resp => {
+					console.log(resp.ok); // Será true si la respuesta es exitosa
+					console.log(resp.status); // El código de estado 201, 300, 400, etc.
+					return resp; // Intentará parsear el resultado a JSON y retornará una promesa donde puedes usar .then para seguir con la lógica
+				})
+				.then(data => {
+					console.log(data); 
+					
+				})
+				.catch(error => {
+					// Manejo de errores
+					console.log(error);
+				})
+		); 
+		setList([]);
+		
+	}
 	function onClick (e){
 		e.preventDefault();
 		let newList = list? [...list] : [];
@@ -63,7 +85,45 @@ const Home = () => {
 					console.log(error);
 				});
 	}
+	function UpdateItem (id) {
+		let newList = [...list]; 
+		newList = newList.map((task)=> {
+			if (task.id === id) {
+				task.is_done = !task.is_done;
+			}
+			return task
+		});
+		const updateTask = newList.filter((task)=> task.id === id);
+		console.log(updateTask);
+		
+		const putTask = {
+				"label": updateTask[0].label,
+				"is_done": updateTask[0].is_done
+				};
 
+		console.log(putTask);
+		
+		setList(newList);
+		fetch(`https://playground.4geeks.com/todo/todos/${id}`, {
+				method: "PUT",
+				body: JSON.stringify(putTask),
+				headers: {
+					"Content-Type": "application/json"}
+				})
+				.then(resp => {
+					console.log(resp.ok); // Será true si la respuesta es exitosa
+					console.log(resp.status); // El código de estado 201, 300, 400, etc.
+					return resp; // Intentará parsear el resultado a JSON y retornará una promesa donde puedes usar .then para seguir con la lógica
+				})
+				.then(data => {
+					console.log(data); 
+					
+				})
+				.catch(error => {
+					// Manejo de errores
+					console.log(error);
+				});
+	}
 	useEffect(()=> {
 		fetch('https://playground.4geeks.com/todo/users/Drokko')
 			.then(resp => {
@@ -74,14 +134,26 @@ const Home = () => {
 			.then(data => {
 				console.log(data); 
 				setList(data.todos);
+				
 			})
 			.catch(error => {
 				console.log(error);
+				console.log('Esto dio error');
+				
 			})
 
 	},[]);
 
-	const ToDoList = list.map((item)=> <Task title={item.label} onClick ={deleteItem} key={item.id} id={item.id}/>)
+	const ToDoList = list.map((item)=> 
+	<Task title={item.label} 
+		onClickDelete={deleteItem} 
+		onClickComplete={UpdateItem}
+		key={item.id} 
+		id={item.id} 
+		check={item.is_done}
+
+		/>
+	)
 	
 
 	
@@ -89,6 +161,7 @@ const Home = () => {
 	return (
 		<div className="container-list">
 			<h1>TO DO LIST</h1>
+			<button onClick={deleteAll} className='deleteAll'>Delete All</button>
 			<div className="list">
 				<form onSubmit={onClick}>
 					<input type="text" placeholder='What needs to be done?' 
